@@ -13,8 +13,8 @@ output_path: "/workspace"
 cam0_calib: "cam0.yaml"
 cam1_calib: "cam1.yaml"
 
-cam3_alib: "cam3.yaml"
-cam4_alib: "cam4.yaml"
+cam3_calib: "cam3.yaml"
+cam4_calib: "cam4.yaml"
 
 
 image_width: 720

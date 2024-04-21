@@ -32,6 +32,9 @@ std::string OUTPUT_FOLDER;
 std::string IMU_TOPIC;
 int ROW, COL;
 double TD;
+double TD3;
+double TD4;
+
 int NUM_OF_CAM;
 int STEREO;
 int USE_IMU;
@@ -174,16 +177,42 @@ void readParameters(std::string config_file)
         TIC.push_back(T.block<3, 1>(0, 3));
     }
 
+    // std::string cam3Calib;
+    // fsSettings["cam3_calib"] >> cam3Calib;
+    // std::string cam3Path = configPath + "/" + cam3Calib;
+    // CAM_NAMES.push_back(cam3Path);
+
+    // std::string cam4Calib;
+    // fsSettings["cam4_calib"] >> cam4Calib;
+    // std::string cam4Path = configPath + "/" + cam4Calib;
+    // CAM_NAMES.push_back(cam4Path);
+
+    // cv::Mat cv_T;
+    // fsSettings["body_T_cam3"] >> cv_T;
+    // Eigen::Matrix4d T;
+    // cv::cv2eigen(cv_T, T);
+    // RIC.push_back(T.block<3, 3>(0, 0));
+    // TIC.push_back(T.block<3, 1>(0, 3));
+
+    // fsSettings["body_T_cam4"] >> cv_T;
+    // cv::cv2eigen(cv_T, T);
+    // RIC.push_back(T.block<3, 3>(0, 0));
+    // TIC.push_back(T.block<3, 1>(0, 3));
+
+
     INIT_DEPTH = 5.0;
     BIAS_ACC_THRESHOLD = 0.1;
     BIAS_GYR_THRESHOLD = 0.1;
 
     TD = fsSettings["td"];
+    TD3 = fsSettings["td3"];
+    TD4 = fsSettings["td4"];
+
     ESTIMATE_TD = fsSettings["estimate_td"];
     if (ESTIMATE_TD)
-        ROS_INFO_STREAM("Unsynchronized sensors, online estimate time offset, initial td: " << TD);
+        ROS_INFO_STREAM("Unsynchronized sensors, online estimate time offset, initial td: " << TD << " " << TD3 << " " << TD4);
     else
-        ROS_INFO_STREAM("Synchronized sensors, fix time offset: " << TD);
+        ROS_INFO_STREAM("Synchronized sensors, fix time offset: " << TD << " " << TD3 << " " << TD4);
 
     ROW = fsSettings["image_height"];
     COL = fsSettings["image_width"];

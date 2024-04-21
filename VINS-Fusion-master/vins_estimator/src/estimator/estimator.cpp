@@ -172,8 +172,8 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
         featureFrame = featureTracker.trackImage(t, _img, _img1);
     //printf("featureTracker time: %f\n", featureTrackerTime.toc());
 
-    featureFrame3 = featureTracker.trackImage(t, _img3);
-    featureFrame4 = featureTracker.trackImage(t, _img4);
+    // featureFrame3 = featureTracker.trackImage(t, _img3);
+    // featureFrame4 = featureTracker.trackImage(t, _img4);
 
     if (SHOW_TRACK)
     {
