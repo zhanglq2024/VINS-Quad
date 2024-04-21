@@ -12,6 +12,11 @@ output_path: "/workspace"
 
 cam0_calib: "cam0.yaml"
 cam1_calib: "cam1.yaml"
+
+cam3_alib: "cam3.yaml"
+cam4_alib: "cam4.yaml"
+
+
 image_width: 720
 image_height: 540
 
@@ -41,6 +46,26 @@ body_T_cam1: !!opencv-matrix
        1.9333603693462709e-03, 9.9996560870738549e-01,
        -8.0649563018242443e-03, -7.9624917233466781e-03, 0., 0., 0., 1. ]
 
+
+body_T_cam3: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [0., 0., 0., 1.,
+            0., 0., 0., 1.,
+            0., 0., 0., 1.,
+            0., 0., 0., 1. ] # TODO: should change here
+
+body_T_cam4: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [0., 0., 0., 1.,
+            0., 0., 0., 1.,
+            0., 0., 0., 1.,
+            0., 0., 0., 1. ] # TODO: should change here
+
+
 #Multiple thread support
 multiple_thread: 1
 
@@ -65,8 +90,14 @@ gyr_w: 0.0001       # gyroscope bias random work noise standard deviation.
 g_norm: 9.81007     # gravity magnitude
 
 #unsynchronization parameters
-estimate_td: 0                      # online estimate time offset between camera and imu
+estimate_td: 0                                        # online estimate time offset between camera and imu
 td: 0.0017902048589341557                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+
+td3: 0.001773298597239114
+td4: 0.001775423281709668
+
+# cam3: timeshift_cam_imu: 0.001773298597239114
+# cam4: timeshift_cam_imu: 0.001775423281709668
 
 #loop closure parameters
 load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
