@@ -44,6 +44,9 @@ queue<sensor_msgs::ImuConstPtr> imu_buf;
 queue<sensor_msgs::PointCloudConstPtr> feature_buf;
 queue<sensor_msgs::ImageConstPtr> img0_buf;
 queue<sensor_msgs::ImageConstPtr> img1_buf;
+queue<sensor_msgs::ImageConstPtr> img3_buf;
+queue<sensor_msgs::ImageConstPtr> img4_buf;
+
 std::mutex m_buf;
 
 void img0_compressed_callback(const sensor_msgs::CompressedImageConstPtr &msg)
@@ -65,6 +68,50 @@ void img0_compressed_callback(const sensor_msgs::CompressedImageConstPtr &msg)
         ROS_ERROR("cv_bridge exception: %s", e.what());
     }
 }
+
+
+void img3_compressed_callback(const sensor_msgs::CompressedImageConstPtr &msg)
+{
+    // std::cout << "img0_compressed_callback" << std::endl;
+    try {
+        // Convert the compressed image message to a cv::Mat
+        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        
+        // Convert the cv::Mat back to a sensor_msgs::Image message
+        sensor_msgs::ImagePtr img_msg(new sensor_msgs::Image);
+        cv_ptr->toImageMsg(*img_msg);
+
+        // Now you can use the image message as before
+        m_buf.lock();
+        img3_buf.push(img_msg);
+        m_buf.unlock();
+    } catch (const cv_bridge::Exception& e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+    }
+}
+
+
+void img4_compressed_callback(const sensor_msgs::CompressedImageConstPtr &msg)
+{
+    // std::cout << "img0_compressed_callback" << std::endl;
+    try {
+        // Convert the compressed image message to a cv::Mat
+        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        
+        // Convert the cv::Mat back to a sensor_msgs::Image message
+        sensor_msgs::ImagePtr img_msg(new sensor_msgs::Image);
+        cv_ptr->toImageMsg(*img_msg);
+
+        // Now you can use the image message as before
+        m_buf.lock();
+        img4_buf.push(img_msg);
+        m_buf.unlock();
+    } catch (const cv_bridge::Exception& e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+    }
+}
+
+
 
 void img1_compressed_callback(const sensor_msgs::CompressedImageConstPtr &msg)
 {
@@ -131,39 +178,88 @@ void sync_process()
     {
         if(STEREO)
         {            
-            cv::Mat image0, image1;
+            cv::Mat image0, image1, image3, image4;
             std_msgs::Header header;
             double time = 0;
             m_buf.lock();
-            if (!img0_buf.empty() && !img1_buf.empty())
+            if (!img0_buf.empty() && !img1_buf.empty() && !img3_buf.empty() && !img4_buf.empty())
             {
                 double time0 = img0_buf.front()->header.stamp.toSec();
                 double time1 = img1_buf.front()->header.stamp.toSec();
-                // 0.003s sync tolerance
-                if(time0 < time1 - 0.003)
-                {
-                    img0_buf.pop();
-                    printf("throw img0\n");
+                double time3 = img3_buf.front()->header.stamp.toSec();
+                double time4 = img4_buf.front()->header.stamp.toSec();
+
+                // get the max time and min time and record the corresponding image buf
+                double max_time = std::max(std::max(time0, time1), std::max(time3, time4));
+                double min_time = std::min(std::min(time0, time1), std::min(time3, time4));
+                
+                // define two pointer to the queue<sensor_msgs::ImageConstPtr>, set the pointer to the max_time and min_time image buffer
+                queue<sensor_msgs::ImageConstPtr> *max_time_img_buf;
+                queue<sensor_msgs::ImageConstPtr> *min_time_img_buf;
+                if (max_time == time0) {
+                    max_time_img_buf = &img0_buf;
+                } else if (max_time == time1) {
+                    max_time_img_buf = &img1_buf;
+                } else if (max_time == time3) {
+                    max_time_img_buf = &img3_buf;
+                } else {
+                    max_time_img_buf = &img4_buf;
                 }
-                else if(time0 > time1 + 0.003)
-                {
-                    img1_buf.pop();
-                    printf("throw img1\n");
+
+                if (min_time == time0) {
+                    min_time_img_buf = &img0_buf;
+                } else if (min_time == time1) {
+                    min_time_img_buf = &img1_buf;
+                } else if (min_time == time3) {
+                    min_time_img_buf = &img3_buf;
+                } else {
+                    min_time_img_buf = &img4_buf;
                 }
-                else
-                {
+
+                if (max_time - min_time > 0.003) {
+                    // if the time difference is too large, throw the min_time image
+                    min_time_img_buf->pop();
+                    printf("throw img X =============== \n");
+                } else {
+                    // actually the difference is 0, since the hardware is synchronized across 4 cameras.
+                    // std::cout << "difference: " << max_time - min_time << std::endl;
+                    // if the time difference is within the tolerance, get the image
                     time = img0_buf.front()->header.stamp.toSec();
                     header = img0_buf.front()->header;
                     image0 = getImageFromMsg(img0_buf.front());
                     img0_buf.pop();
                     image1 = getImageFromMsg(img1_buf.front());
                     img1_buf.pop();
-                    //printf("find img0 and img1\n");
+                    image3 = getImageFromMsg(img3_buf.front());
+                    img3_buf.pop();
+                    image4 = getImageFromMsg(img4_buf.front());
+                    img4_buf.pop();
                 }
+                // // 0.003s sync tolerance
+                // if(time0 < time1 - 0.003)
+                // {
+                //     img0_buf.pop();
+                //     printf("throw img0\n");
+                // }
+                // else if(time0 > time1 + 0.003)
+                // {
+                //     img1_buf.pop();
+                //     printf("throw img1\n");
+                // }
+                // else
+                // {
+                //     time = img0_buf.front()->header.stamp.toSec();
+                //     header = img0_buf.front()->header;
+                //     image0 = getImageFromMsg(img0_buf.front());
+                //     img0_buf.pop();
+                //     image1 = getImageFromMsg(img1_buf.front());
+                //     img1_buf.pop();
+                //     //printf("find img0 and img1\n");
+                // }
             }
             m_buf.unlock();
             if(!image0.empty())
-                estimator.inputImage(time, image0, image1);
+                estimator.inputImage(time, image0, image1, image3, image4);
         }
         else
         {
@@ -374,6 +470,10 @@ int main(int argc, char **argv)
     {
         sub_img1 = n.subscribe(IMAGE1_TOPIC, 100, img1_compressed_callback);
     }
+
+    ros::Subscriber sub_img3 = n.subscribe("/alphasense_driver_ros/cam3/compressed", 100, img3_compressed_callback);
+    ros::Subscriber sub_img4 = n.subscribe("/alphasense_driver_ros/cam4/compressed", 100, img4_compressed_callback);
+
     ros::Subscriber sub_restart = n.subscribe("/vins_restart", 100, restart_callback);
     ros::Subscriber sub_imu_switch = n.subscribe("/vins_imu_switch", 100, imu_switch_callback);
     ros::Subscriber sub_cam_switch = n.subscribe("/vins_cam_switch", 100, cam_switch_callback);
