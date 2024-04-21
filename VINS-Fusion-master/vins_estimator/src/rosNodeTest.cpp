@@ -413,7 +413,7 @@ void playBag(const std::string &bag_file) {
             break;
         }
         // sleep
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     bag.close();
