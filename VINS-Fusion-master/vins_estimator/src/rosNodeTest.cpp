@@ -350,11 +350,11 @@ int main(int argc, char **argv)
 
     ROS_WARN("waiting for image and imu...");
 
-    // std::string bag_file = "/workspace/2021-07-01-10-37-38-quad-easy.bag";
-    // // 在一个独立线程中运行 bag 播放
-    // std::thread bag_thread([bag_file]() {
-    //     playBag(bag_file);
-    // });
+    std::string bag_file = "/workspace/2021-07-01-10-37-38-quad-easy.bag";
+    // 在一个独立线程中运行 bag 播放
+    std::thread bag_thread([bag_file]() {
+        playBag(bag_file);
+    });
 
     registerPub(n);
 
@@ -380,6 +380,6 @@ int main(int argc, char **argv)
 
     std::thread sync_thread{sync_process};
     ros::spin();
-    // bag_thread.join();
+    bag_thread.join();
     return 0;
 }
