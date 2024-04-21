@@ -24,6 +24,8 @@ image_height: 540
 estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
 
+# these two values are taken from optimized extrinsic parameters
+
 body_T_cam0: !!opencv-matrix
    rows: 4
    cols: 4
@@ -47,23 +49,26 @@ body_T_cam1: !!opencv-matrix
        -8.0649563018242443e-03, -7.9624917233466781e-03, 0., 0., 0., 1. ]
 
 
+# these two values are taken from initial guess of extrinsic parameters which are T_cam_imu
+# but should be able to be caluculated from the optimized extrinsic parameters above.
+
 body_T_cam3: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data: [0., 0., 0., 1.,
-            0., 0., 0., 1.,
-            0., 0., 0., 1.,
-            0., 0., 0., 1. ] # TODO: should change here
+   data: [-0.9999743144465649,0.005684125220267676,0.004365909710851801,-0.008740902973298971,
+        0.004318832408330451,-0.008268338990343661,0.9999564901819329,0.058440155472831136,
+        0.005719976726504024,0.9999496613784223,0.008243577829266411,-0.008680157972600442,
+        0.0,0.0,0.0,1.0] # TODO: should change here
 
 body_T_cam4: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data: [0., 0., 0., 1.,
-            0., 0., 0., 1.,
-            0., 0., 0., 1.,
-            0., 0., 0., 1. ] # TODO: should change here
+   data: [0.9999610215303221,0.004911420342163838,-0.007337122750546052,-0.007004579485690841,
+        -0.007327003715155781,-0.0020751397262629596,-0.9999710039854527,-0.07162565002980309,
+        -0.004926503485444276,0.9999857857716471,-0.002039072845398485,-0.011119423531828562,
+        0.0,0.0,0.0,1.0] # TODO: should change here
 
 
 #Multiple thread support
