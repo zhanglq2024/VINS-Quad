@@ -83,6 +83,7 @@ class FeatureManager
     FeatureManager(Matrix3d _Rs[]);
 
     void setRic(Matrix3d _ric[]);
+    void setSingleRic(Matrix3d _ric);
     void clearState();
     int getFeatureCount();
     bool addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, double td);

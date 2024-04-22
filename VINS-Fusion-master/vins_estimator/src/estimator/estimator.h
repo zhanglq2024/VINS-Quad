@@ -98,6 +98,8 @@ class Estimator
     queue<pair<double, Eigen::Vector3d>> accBuf;
     queue<pair<double, Eigen::Vector3d>> gyrBuf;
     queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf;
+    queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf3;
+    queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf4;
     double prevTime, curTime;
     bool openExEstimation;
 
@@ -143,6 +145,9 @@ class Estimator
     int inputImageCnt;
 
     FeatureManager f_manager;
+    FeatureManager f_manager3;
+    FeatureManager f_manager4;
+
     MotionEstimator m_estimator;
     InitialEXRotation initial_ex_rotation;
 

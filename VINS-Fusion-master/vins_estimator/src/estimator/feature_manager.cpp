@@ -29,6 +29,11 @@ void FeatureManager::setRic(Matrix3d _ric[])
     }
 }
 
+void FeatureManager::setSingleRic(Matrix3d _ric)
+{
+    ric[0] = _ric;
+}
+
 void FeatureManager::clearState()
 {
     feature.clear();

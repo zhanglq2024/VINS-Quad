@@ -43,6 +43,9 @@ map<int, Eigen::Vector3d> pts_gt;
 std::string IMAGE0_TOPIC, IMAGE1_TOPIC;
 std::string FISHEYE_MASK;
 std::vector<std::string> CAM_NAMES;
+std::vector<std::string> CAM3_NAMES;
+std::vector<std::string> CAM4_NAMES;
+
 int MAX_CNT;
 int MIN_DIST;
 double F_THRESHOLD;
@@ -177,27 +180,27 @@ void readParameters(std::string config_file)
         TIC.push_back(T.block<3, 1>(0, 3));
     }
 
-    // std::string cam3Calib;
-    // fsSettings["cam3_calib"] >> cam3Calib;
-    // std::string cam3Path = configPath + "/" + cam3Calib;
-    // CAM_NAMES.push_back(cam3Path);
+    std::string cam3Calib;
+    fsSettings["cam3_calib"] >> cam3Calib;
+    std::string cam3Path = configPath + "/" + cam3Calib;
+    CAM3_NAMES.push_back(cam3Path);
 
-    // std::string cam4Calib;
-    // fsSettings["cam4_calib"] >> cam4Calib;
-    // std::string cam4Path = configPath + "/" + cam4Calib;
-    // CAM_NAMES.push_back(cam4Path);
+    std::string cam4Calib;
+    fsSettings["cam4_calib"] >> cam4Calib;
+    std::string cam4Path = configPath + "/" + cam4Calib;
+    CAM4_NAMES.push_back(cam4Path);
 
-    // cv::Mat cv_T;
-    // fsSettings["body_T_cam3"] >> cv_T;
-    // Eigen::Matrix4d T;
-    // cv::cv2eigen(cv_T, T);
-    // RIC.push_back(T.block<3, 3>(0, 0));
-    // TIC.push_back(T.block<3, 1>(0, 3));
+    cv::Mat cv_T;
+    fsSettings["body_T_cam3"] >> cv_T;
+    Eigen::Matrix4d T;
+    cv::cv2eigen(cv_T, T);
+    RIC.push_back(T.block<3, 3>(0, 0));
+    TIC.push_back(T.block<3, 1>(0, 3));
 
-    // fsSettings["body_T_cam4"] >> cv_T;
-    // cv::cv2eigen(cv_T, T);
-    // RIC.push_back(T.block<3, 3>(0, 0));
-    // TIC.push_back(T.block<3, 1>(0, 3));
+    fsSettings["body_T_cam4"] >> cv_T;
+    cv::cv2eigen(cv_T, T);
+    RIC.push_back(T.block<3, 3>(0, 0));
+    TIC.push_back(T.block<3, 1>(0, 3));
 
 
     INIT_DEPTH = 5.0;

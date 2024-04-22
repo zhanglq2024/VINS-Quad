@@ -45,6 +45,9 @@ extern std::string VINS_RESULT_PATH;
 extern std::string OUTPUT_FOLDER;
 extern std::string IMU_TOPIC;
 extern double TD;
+extern double TD3;
+extern double TD4;
+
 extern int ESTIMATE_TD;
 extern int ROLLING_SHUTTER;
 extern int ROW, COL;
@@ -58,6 +61,9 @@ extern map<int, Eigen::Vector3d> pts_gt;
 extern std::string IMAGE0_TOPIC, IMAGE1_TOPIC;
 extern std::string FISHEYE_MASK;
 extern std::vector<std::string> CAM_NAMES;
+extern std::vector<std::string> CAM3_NAMES;
+extern std::vector<std::string> CAM4_NAMES;
+
 extern int MAX_CNT;
 extern int MIN_DIST;
 extern double F_THRESHOLD;

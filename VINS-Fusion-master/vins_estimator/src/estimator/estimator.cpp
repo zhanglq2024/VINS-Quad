@@ -10,7 +10,7 @@
 #include "estimator.h"
 #include "../utility/visualization.h"
 
-Estimator::Estimator(): f_manager{Rs}
+Estimator::Estimator(): f_manager{Rs}, f_manager3{Rs}, f_manager4{Rs}
 {
     ROS_INFO("init begins");
     initThreadFlag = false;
@@ -33,8 +33,13 @@ void Estimator::clearState()
         accBuf.pop();
     while(!gyrBuf.empty())
         gyrBuf.pop();
+    
     while(!featureBuf.empty())
         featureBuf.pop();
+    while(!featureBuf3.empty())
+        featureBuf3.pop();
+    while(!featureBuf4.empty())
+        featureBuf4.pop();
 
     prevTime = -1;
     curTime = 0;
@@ -68,6 +73,9 @@ void Estimator::clearState()
         ric[i] = Matrix3d::Identity();
     }
 
+    tic3 = tic4 = Vector3d::Zero();
+    ric3 = ric4 = Matrix3d::Identity();
+
     first_imu = false,
     sum_of_back = 0;
     sum_of_front = 0;
@@ -86,6 +94,8 @@ void Estimator::clearState()
     last_marginalization_parameter_blocks.clear();
 
     f_manager.clearState();
+    f_manager3.clearState();
+    f_manager4.clearState();
 
     failure_occur = 0;
 
@@ -101,14 +111,27 @@ void Estimator::setParameter()
         ric[i] = RIC[i];
         cout << " exitrinsic cam " << i << endl  << ric[i] << endl << tic[i].transpose() << endl;
     }
+    ric3 = RIC[2];
+    ric4 = RIC[3];
+    tic3 = TIC[2];
+    tic4 = TIC[3];
+
     f_manager.setRic(ric);
+    f_manager3.setSingleRic(ric3);
+    f_manager4.setSingleRic(ric4);
+
     ProjectionTwoFrameOneCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     ProjectionTwoFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     ProjectionOneFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     td = TD;
+    td3 = TD3;
+    td4 = TD4;
+
     g = G;
     cout << "set g " << g.transpose() << endl;
     featureTracker.readIntrinsicParameter(CAM_NAMES);
+    featureTracker3.readIntrinsicParameter(CAM3_NAMES);
+    featureTracker4.readIntrinsicParameter(CAM4_NAMES);
 
     std::cout << "MULTIPLE_THREAD is " << MULTIPLE_THREAD << '\n';
     if (MULTIPLE_THREAD && !initThreadFlag)
@@ -172,8 +195,8 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
         featureFrame = featureTracker.trackImage(t, _img, _img1);
     //printf("featureTracker time: %f\n", featureTrackerTime.toc());
 
-    // featureFrame3 = featureTracker.trackImage(t, _img3);
-    // featureFrame4 = featureTracker.trackImage(t, _img4);
+    featureFrame3 = featureTracker3.trackImage(t, _img3);
+    featureFrame4 = featureTracker4.trackImage(t, _img4);
 
     if (SHOW_TRACK)
     {
@@ -187,6 +210,8 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
         {
             mBuf.lock();
             featureBuf.push(make_pair(t, featureFrame));
+            featureBuf3.push(make_pair(t, featureFrame3));
+            featureBuf4.push(make_pair(t, featureFrame4));
             mBuf.unlock();
         }
     }
@@ -194,6 +219,8 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
     {
         mBuf.lock();
         featureBuf.push(make_pair(t, featureFrame));
+        featureBuf3.push(make_pair(t, featureFrame3));
+        featureBuf4.push(make_pair(t, featureFrame4));
         mBuf.unlock();
         TicToc processTime;
         processMeasurements();
