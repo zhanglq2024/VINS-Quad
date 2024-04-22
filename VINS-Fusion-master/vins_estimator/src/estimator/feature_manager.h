@@ -111,7 +111,7 @@ class FeatureManager
 
   private:
     double compensatedParallax2(const FeaturePerId &it_per_id, int frame_count);
-    const Matrix3d *Rs;
+    const Matrix3d *Rs; // pose of body in world from sliding window
     Matrix3d ric[2];
 };
 
