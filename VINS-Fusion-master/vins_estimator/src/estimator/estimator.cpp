@@ -305,11 +305,14 @@ void Estimator::processMeasurements()
     while (1)
     {
         //printf("process measurments\n");
-        pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > feature;
+        pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > feature, feature3, feature4;
         vector<pair<double, Eigen::Vector3d>> accVector, gyrVector;
-        if(!featureBuf.empty())
+        if(!featureBuf.empty() && !featureBuf3.empty() && !featureBuf4.empty())
         {
             feature = featureBuf.front();
+            feature3 = featureBuf3.front();
+            feature4 = featureBuf4.front();
+
             curTime = feature.first + td;
             while(1)
             {
@@ -329,6 +332,9 @@ void Estimator::processMeasurements()
                 getIMUInterval(prevTime, curTime, accVector, gyrVector);
 
             featureBuf.pop();
+            featureBuf3.pop();
+            featureBuf4.pop();
+
             mBuf.unlock();
 
             if(USE_IMU)
@@ -348,7 +354,7 @@ void Estimator::processMeasurements()
                 }
             }
             mProcess.lock();
-            processImage(feature.second, feature.first);
+            processImage(feature.second, feature3.second, feature4.second, feature.first);
             prevTime = curTime;
 
             printStatistics(*this, 0);
@@ -441,9 +447,14 @@ void Estimator::processIMU(double t, double dt, const Vector3d &linear_accelerat
     gyr_0 = angular_velocity; 
 }
 
-void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header)
+void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, 
+                            const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image3, 
+                            const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image4, 
+                            const double header)
 {
     ROS_DEBUG("new image coming ------------------------------------------");
+    std::cout << "image size " << image.size() << " " << image3.size() << " " << image4.size() << std::endl;
+
     ROS_DEBUG("Adding feature points %lu", image.size());
     if (f_manager.addFeatureCheckParallax(frame_count, image, td))
     {

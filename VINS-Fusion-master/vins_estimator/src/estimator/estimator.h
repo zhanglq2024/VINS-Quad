@@ -50,7 +50,10 @@ class Estimator
     void inputFeature(double t, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &featureFrame);
     void inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1 = cv::Mat(), const cv::Mat &_img3 = cv::Mat(), const cv::Mat &_img4 = cv::Mat());
     void processIMU(double t, double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
-    void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header);
+    void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, 
+                        const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image3, 
+                        const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image4, 
+                        const double header);
     void processMeasurements();
     void changeSensorType(int use_imu, int use_stereo);
 
