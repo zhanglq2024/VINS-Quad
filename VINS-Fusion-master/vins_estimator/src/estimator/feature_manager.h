@@ -80,7 +80,7 @@ class FeaturePerId
 class FeatureManager
 {
   public:
-    FeatureManager(Matrix3d _Rs[]);
+    FeatureManager(Matrix3d _Rs[], bool _is_stereo);
 
     void setRic(Matrix3d _ric[]);
     void setSingleRic(Matrix3d _ric);
@@ -113,6 +113,7 @@ class FeatureManager
     double compensatedParallax2(const FeaturePerId &it_per_id, int frame_count);
     const Matrix3d *Rs; // pose of body in world from sliding window
     Matrix3d ric[2];
+    bool is_stereo;
 };
 
 #endif

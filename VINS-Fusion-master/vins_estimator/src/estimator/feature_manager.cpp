@@ -14,8 +14,8 @@ int FeaturePerId::endFrame()
     return start_frame + feature_per_frame.size() - 1;
 }
 
-FeatureManager::FeatureManager(Matrix3d _Rs[])
-    : Rs(_Rs)
+FeatureManager::FeatureManager(Matrix3d _Rs[], bool _is_stereo)
+    : Rs(_Rs), is_stereo(_is_stereo)
 {
     for (int i = 0; i < NUM_OF_CAM; i++)
         ric[i].setIdentity();
@@ -306,13 +306,26 @@ void FeatureManager::initFramePoseByPnP(int frameCnt, Vector3d Ps[], Matrix3d Rs
 
 void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vector3d tic[], Matrix3d ric[])
 {
+
+    int valid_num = 0;
+    int long_num = 0;
     for (auto &it_per_id : feature)
     {
-        if (it_per_id.estimated_depth > 0)
-            continue;
 
-        if(STEREO && it_per_id.feature_per_frame[0].is_stereo)
+        // if (!this->is_stereo) {
+        //     std::cout << "length of feature: " << it_per_id.feature_per_frame.size() << std::endl;
+        // }
+
+        if (it_per_id.estimated_depth > 0) { // TODO(lanqing): why this depth is already estimated?
+            // if (!is_stereo)
+            //     std::cout << "already have depth" << std::endl;
+            continue;
+        }
+        
+        if(this->is_stereo && it_per_id.feature_per_frame[0].is_stereo)
         {
+            // std::cout << "normal feature size: " << it_per_id.feature_per_frame.size() << std::endl;
+
             int imu_i = it_per_id.start_frame;
             Eigen::Matrix<double, 3, 4> leftPose;
             Eigen::Vector3d t0 = Ps[imu_i] + Rs[imu_i] * tic[0];
@@ -339,8 +352,10 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
             Eigen::Vector3d localPoint;
             localPoint = leftPose.leftCols<3>() * point3d + leftPose.rightCols<1>();
             double depth = localPoint.z();
-            if (depth > 0)
+            if (depth > 0) {
                 it_per_id.estimated_depth = depth;
+                valid_num ++;
+            }
             else
                 it_per_id.estimated_depth = INIT_DEPTH;
             /*
@@ -352,6 +367,7 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
         }
         else if(it_per_id.feature_per_frame.size() > 1)
         {
+            // std::cout << "size is " << it_per_id.feature_per_frame.size() << std::endl;
             int imu_i = it_per_id.start_frame;
             Eigen::Matrix<double, 3, 4> leftPose;
             Eigen::Vector3d t0 = Ps[imu_i] + Rs[imu_i] * tic[0];
@@ -374,8 +390,11 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
             Eigen::Vector3d localPoint;
             localPoint = leftPose.leftCols<3>() * point3d + leftPose.rightCols<1>();
             double depth = localPoint.z();
-            if (depth > 0)
+            if (depth > 0) {
                 it_per_id.estimated_depth = depth;
+                valid_num ++;
+            }
+                
             else
                 it_per_id.estimated_depth = INIT_DEPTH;
             /*
@@ -388,6 +407,8 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
         it_per_id.used_num = it_per_id.feature_per_frame.size();
         if (it_per_id.used_num < 4)
             continue;
+        else
+            long_num++;
 
         int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
 
@@ -427,12 +448,18 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
         it_per_id.estimated_depth = svd_method;
         //it_per_id->estimated_depth = INIT_DEPTH;
 
-        if (it_per_id.estimated_depth < 0.1)
-        {
+        if (it_per_id.estimated_depth < 0.1) {
             it_per_id.estimated_depth = INIT_DEPTH;
+        } else {
+            valid_num ++;
         }
 
     }
+    if (!this->is_stereo) {
+        std::cout << "======== long ratio =========" << long_num << " / " << feature.size() << std::endl;
+        std::cout << "======== valid ratio ======== " << valid_num << " / " << feature.size() << std::endl;
+    }
+        
 }
 
 void FeatureManager::removeOutlier(set<int> &outlierIndex)

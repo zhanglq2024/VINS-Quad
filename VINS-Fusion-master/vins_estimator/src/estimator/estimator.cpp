@@ -10,8 +10,13 @@
 #include "estimator.h"
 #include "../utility/visualization.h"
 
-Estimator::Estimator(): f_manager{Rs}, f_manager3{Rs}, f_manager4{Rs}
+Estimator::Estimator():f_manager(FeatureManager(Rs, true)), 
+    // f_manager3{Rs, false}, f_manager4{Rs, false}
+    f_manager3(FeatureManager(Rs, false)),
+    f_manager4(FeatureManager(Rs, false))
 {
+
+
     ROS_INFO("init begins");
     initThreadFlag = false;
     clearState();
@@ -188,7 +193,7 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame4;
 
     TicToc featureTrackerTime;
-
+    
     if(_img1.empty())
         featureFrame = featureTracker.trackImage(t, _img);
     else
@@ -197,6 +202,7 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
 
     featureFrame3 = featureTracker3.trackImage(t, _img3);
     featureFrame4 = featureTracker4.trackImage(t, _img4);
+
 
     if (SHOW_TRACK)
     {
@@ -467,9 +473,14 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         //printf("non-keyframe\n");
     }
 
+    f_manager3.addFeatureCheckParallax(frame_count, image3, td); // they all shared the same td
+    f_manager4.addFeatureCheckParallax(frame_count, image4, td);
+
     ROS_DEBUG("%s", marginalization_flag ? "Non-keyframe" : "Keyframe");
     ROS_DEBUG("Solving %d", frame_count);
-    ROS_DEBUG("number of feature: %d", f_manager.getFeatureCount());
+    ROS_INFO("number of stereo feature: %d", f_manager.getFeatureCount());
+    ROS_INFO("number of cam3 feature: %d", f_manager3.getFeatureCount());
+    ROS_INFO("number of cam4 feature: %d", f_manager4.getFeatureCount());
     Headers[frame_count] = header;
 
     ImageFrame imageframe(image, header);
@@ -546,7 +557,10 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                 solver_flag = NON_LINEAR;
                 slideWindow();
                 ROS_INFO("Initialization finish!");
+                
             }
+            //f_manager3.triangulate(frame_count, Ps, Rs, &tic3, &ric3);
+            //f_manager4.triangulate(frame_count, Ps, Rs, &tic4, &ric4);
         }
 
         // stereo only initilization
@@ -584,6 +598,17 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         if(!USE_IMU)
             f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
         f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
+
+
+        std::cout << "tic3 " << tic3 << std::endl;
+        std::cout << "ric3" << ric3 << std::endl;
+
+        std::cout << "tic4 " << tic4 << std::endl;
+        std::cout << "ric4" << ric4 << std::endl;
+
+        f_manager3.triangulate(frame_count, Ps, Rs, &tic3, &ric3);
+        f_manager4.triangulate(frame_count, Ps, Rs, &tic4, &ric4);
+        
         optimization();
         set<int> removeIndex;
         outliersRejection(removeIndex);
