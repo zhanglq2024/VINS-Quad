@@ -930,6 +930,14 @@ void Estimator::vector2double()
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         para_Feature[i][0] = dep(i);
 
+    // VectorXd dep3 = f_manager3.getDepthVector();
+    // for (int i = 0; i < f_manager3.getFeatureCount(); i++)
+    //     para_Feature3[i][0] = dep3(i);
+    
+    // VectorXd dep4 = f_manager4.getDepthVector();
+    // for (int i = 0; i < f_manager4.getFeatureCount(); i++)
+    //     para_Feature4[i][0] = dep4(i);
+
     para_Td[0][0] = td;
 }
 
@@ -1016,6 +1024,17 @@ void Estimator::double2vector()
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         dep(i) = para_Feature[i][0];
     f_manager.setDepth(dep);
+
+
+    // VectorXd dep3 = f_manager3.getDepthVector();
+    // for (int i = 0; i < f_manager3.getFeatureCount(); i++)
+    //     dep3(i) = para_Feature3[i][0];
+    // f_manager3.setDepth(dep3);
+
+    // VectorXd dep4 = f_manager4.getDepthVector();
+    // for (int i = 0; i < f_manager4.getFeatureCount(); i++)
+    //     dep4(i) = para_Feature4[i][0];
+    // f_manager4.setDepth(dep4);
 
     if(USE_IMU)
         td = para_Td[0][0];
