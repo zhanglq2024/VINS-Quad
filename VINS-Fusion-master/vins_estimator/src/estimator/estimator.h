@@ -171,6 +171,10 @@ class Estimator
     double para_Feature4[NUM_OF_F][SIZE_FEATURE];
 
     double para_Ex_Pose[2][SIZE_POSE];
+
+    double para_Ex_Pose3[1][SIZE_POSE];
+    double para_Ex_Pose4[1][SIZE_POSE];
+
     double para_Retrive_Pose[SIZE_POSE];
     double para_Td[1][1];
     double para_Tr[1][1];

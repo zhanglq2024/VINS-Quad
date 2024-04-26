@@ -461,6 +461,9 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     ROS_DEBUG("new image coming ------------------------------------------");
     std::cout << "image size " << image.size() << " " << image3.size() << " " << image4.size() << std::endl;
 
+    // after init, this will stick to 10.
+    // std::cout << "------------------------ frame count " << frame_count << std::endl;
+
     ROS_DEBUG("Adding feature points %lu", image.size());
     if (f_manager.addFeatureCheckParallax(frame_count, image, td))
     {
@@ -924,19 +927,47 @@ void Estimator::vector2double()
         para_Ex_Pose[i][5] = q.z();
         para_Ex_Pose[i][6] = q.w();
     }
+    {
+        para_Ex_Pose3[0][0] = tic3.x();
+        para_Ex_Pose3[0][1] = tic3.y();
+        para_Ex_Pose3[0][2] = tic3.z();
+        Quaterniond q{ric3};
+        para_Ex_Pose3[0][3] = q.x();
+        para_Ex_Pose3[0][4] = q.y();
+        para_Ex_Pose3[0][5] = q.z();
+        para_Ex_Pose3[0][6] = q.w();
+    }
+    {
+        para_Ex_Pose4[0][0] = tic4.x();
+        para_Ex_Pose4[0][1] = tic4.y();
+        para_Ex_Pose4[0][2] = tic4.z();
+        Quaterniond q{ric4};
+        para_Ex_Pose4[0][3] = q.x();
+        para_Ex_Pose4[0][4] = q.y();
+        para_Ex_Pose4[0][5] = q.z();
+        para_Ex_Pose4[0][6] = q.w();
+    }
+
+
+
 
 
     VectorXd dep = f_manager.getDepthVector();
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         para_Feature[i][0] = dep(i);
-
-    // VectorXd dep3 = f_manager3.getDepthVector();
-    // for (int i = 0; i < f_manager3.getFeatureCount(); i++)
-    //     para_Feature3[i][0] = dep3(i);
     
-    // VectorXd dep4 = f_manager4.getDepthVector();
-    // for (int i = 0; i < f_manager4.getFeatureCount(); i++)
-    //     para_Feature4[i][0] = dep4(i);
+    //std::cout << "Depth vector Count 3 " << f_manager3.getDepthVector().size() << " " << f_manager3.getFeatureCount() <<  std::endl;
+    //std::cout << "Depth vector Count 4 " << f_manager4.getDepthVector().size() << " " << f_manager4.getFeatureCount() <<  std::endl;
+
+    //std::cout << NUM_OF_F << std::endl;
+    //std::cout << NUM_OF_F << std::endl;
+    VectorXd dep3 = f_manager3.getDepthVector();
+    for (int i = 0; i < f_manager3.getFeatureCount(); i++)
+        para_Feature3[i][0] = dep3(i);
+    
+    VectorXd dep4 = f_manager4.getDepthVector();
+    for (int i = 0; i < f_manager4.getFeatureCount(); i++)
+        para_Feature4[i][0] = dep4(i);
 
     para_Td[0][0] = td;
 }
@@ -1018,6 +1049,29 @@ void Estimator::double2vector()
                                  para_Ex_Pose[i][4],
                                  para_Ex_Pose[i][5]).normalized().toRotationMatrix();
         }
+
+        {
+            tic3 = Vector3d(para_Ex_Pose3[0][0],
+                            para_Ex_Pose3[0][1],
+                            para_Ex_Pose3[0][2]);
+            ric3 = Quaterniond(para_Ex_Pose3[0][6],
+                                para_Ex_Pose3[0][3],
+                                para_Ex_Pose3[0][4],
+                                para_Ex_Pose3[0][5]).normalized().toRotationMatrix();
+        }
+
+        {
+            tic4 = Vector3d(para_Ex_Pose4[0][0],
+                            para_Ex_Pose4[0][1],
+                            para_Ex_Pose4[0][2]);
+            ric4 = Quaterniond(para_Ex_Pose4[0][6],
+                                para_Ex_Pose4[0][3],
+                                para_Ex_Pose4[0][4],
+                                para_Ex_Pose4[0][5]).normalized().toRotationMatrix();
+        }
+
+
+
     }
 
     VectorXd dep = f_manager.getDepthVector();
@@ -1026,15 +1080,20 @@ void Estimator::double2vector()
     f_manager.setDepth(dep);
 
 
-    // VectorXd dep3 = f_manager3.getDepthVector();
-    // for (int i = 0; i < f_manager3.getFeatureCount(); i++)
-    //     dep3(i) = para_Feature3[i][0];
-    // f_manager3.setDepth(dep3);
+    //std::cout << "Depth vector Count 3 " << f_manager3.getDepthVector().size() << " " << f_manager3.getFeatureCount() <<  std::endl;
+    //std::cout << "Depth vector Count 4 " << f_manager4.getDepthVector().size() << " " << f_manager4.getFeatureCount() <<  std::endl;
 
-    // VectorXd dep4 = f_manager4.getDepthVector();
-    // for (int i = 0; i < f_manager4.getFeatureCount(); i++)
-    //     dep4(i) = para_Feature4[i][0];
-    // f_manager4.setDepth(dep4);
+    //std::cout << NUM_OF_F << std::endl;
+
+    VectorXd dep3 = f_manager3.getDepthVector();
+    for (int i = 0; i < f_manager3.getFeatureCount(); i++)
+        dep3(i) = para_Feature3[i][0];
+    f_manager3.setDepth(dep3);
+
+    VectorXd dep4 = f_manager4.getDepthVector();
+    for (int i = 0; i < f_manager4.getFeatureCount(); i++)
+        dep4(i) = para_Feature4[i][0];
+    f_manager4.setDepth(dep4);
 
     if(USE_IMU)
         td = para_Td[0][0];
@@ -1162,6 +1221,8 @@ void Estimator::optimization()
 
         int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
         
+        // std::cout << "start frame imu i on norm " << imu_i << std::endl;
+
         Vector3d pts_i = it_per_id.feature_per_frame[0].point;
 
         for (auto &it_per_frame : it_per_id.feature_per_frame)
@@ -1195,6 +1256,59 @@ void Estimator::optimization()
             f_m_cnt++;
         }
     }
+
+    {
+
+        int f_m_cnt = 0;
+        int feature_index = -1;
+        for (auto &it_per_id : f_manager3.feature)
+        {
+            it_per_id.used_num = it_per_id.feature_per_frame.size();
+            if (it_per_id.used_num < 4)
+                continue;
+    
+            ++feature_index;
+
+            int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+            
+            std::cout << "start frame imu i on my " << imu_i << " size is " << it_per_id.feature_per_frame.size() << std::endl;
+
+            Vector3d pts_i = it_per_id.feature_per_frame[0].point;
+
+            for (auto &it_per_frame : it_per_id.feature_per_frame)
+            {
+                // imu_j++;
+                // if (imu_i != imu_j)
+                // {
+                //     Vector3d pts_j = it_per_frame.point;
+                //     ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
+                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                //     problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index], para_Td[0]);
+                // }
+
+                // if(STEREO && it_per_frame.is_stereo)
+                // {                
+                //     Vector3d pts_j_right = it_per_frame.pointRight;
+                //     if(imu_i != imu_j)
+                //     {
+                //         ProjectionTwoFrameTwoCamFactor *f = new ProjectionTwoFrameTwoCamFactor(pts_i, pts_j_right, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocityRight,
+                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                //         problem.AddResidualBlock(f, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Ex_Pose[1], para_Feature[feature_index], para_Td[0]);
+                //     }
+                //     else
+                //     {
+                //         ProjectionOneFrameTwoCamFactor *f = new ProjectionOneFrameTwoCamFactor(pts_i, pts_j_right, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocityRight,
+                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                //         problem.AddResidualBlock(f, loss_function, para_Ex_Pose[0], para_Ex_Pose[1], para_Feature[feature_index], para_Td[0]);
+                //     }
+                
+                // }
+                // f_m_cnt++;
+            }
+        }
+
+    }
+
 
     ROS_DEBUG("visual measurement count: %d", f_m_cnt);
     //printf("prepare for ceres: %f \n", t_prepare.toc());
@@ -1271,6 +1385,7 @@ void Estimator::optimization()
                 ++feature_index;
 
                 int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+                // std::cout << "start frame imu i " << imu_i << std::endl;
                 if (imu_i != 0)
                     continue;
 
@@ -1514,6 +1629,8 @@ void Estimator::slideWindowNew()
 {
     sum_of_front++;
     f_manager.removeFront(frame_count);
+    f_manager3.removeFront(frame_count);
+    f_manager4.removeFront(frame_count);
 }
 
 void Estimator::slideWindowOld()
@@ -1530,9 +1647,25 @@ void Estimator::slideWindowOld()
         P0 = back_P0 + back_R0 * tic[0];
         P1 = Ps[0] + Rs[0] * tic[0];
         f_manager.removeBackShiftDepth(R0, P0, R1, P1);
+
+        R0 = back_R0 * ric3;
+        R1 = Rs[0] * ric3;
+        P0 = back_P0 + back_R0 * tic3;
+        P1 = Ps[0] + Rs[0] * tic3;
+        f_manager3.removeBackShiftDepth(R0, P0, R1, P1);
+
+        R0 = back_R0 * ric4;
+        R1 = Rs[0] * ric4;
+        P0 = back_P0 + back_R0 * tic4;
+        P1 = Ps[0] + Rs[0] * tic4;
+        f_manager4.removeBackShiftDepth(R0, P0, R1, P1);
+
     }
-    else
+    else {
         f_manager.removeBack();
+        f_manager3.removeBack();
+        f_manager4.removeBack();
+    }
 }
 
 
