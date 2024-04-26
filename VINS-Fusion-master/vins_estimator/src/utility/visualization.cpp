@@ -104,6 +104,26 @@ void printStatistics(const Estimator &estimator, double t)
             else
                 fs << "body_T_cam1" << cv_T ;
         }
+
+        {
+            Eigen::Matrix4d eigen_T = Eigen::Matrix4d::Identity();
+            eigen_T.block<3, 3>(0, 0) = estimator.ric3;
+            eigen_T.block<3, 1>(0, 3) = estimator.tic3;
+            cv::Mat cv_T;
+            cv::eigen2cv(eigen_T, cv_T);
+            fs << "body_T_cam3" << cv_T ;
+        }
+
+        {
+            Eigen::Matrix4d eigen_T = Eigen::Matrix4d::Identity();
+            eigen_T.block<3, 3>(0, 0) = estimator.ric4;
+            eigen_T.block<3, 1>(0, 3) = estimator.tic4;
+            cv::Mat cv_T;
+            cv::eigen2cv(eigen_T, cv_T);
+            fs << "body_T_cam4" << cv_T ;
+        }
+
+
         fs.release();
     }
 

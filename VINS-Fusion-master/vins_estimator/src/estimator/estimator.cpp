@@ -956,11 +956,12 @@ void Estimator::vector2double()
     for (int i = 0; i < f_manager.getFeatureCount(); i++)
         para_Feature[i][0] = dep(i);
     
-    //std::cout << "Depth vector Count 3 " << f_manager3.getDepthVector().size() << " " << f_manager3.getFeatureCount() <<  std::endl;
-    //std::cout << "Depth vector Count 4 " << f_manager4.getDepthVector().size() << " " << f_manager4.getFeatureCount() <<  std::endl;
+    std::cout << "Depth vector Count 3 " << f_manager3.getDepthVector().size() << " " << f_manager3.getFeatureCount() <<  std::endl;
+    std::cout << "Depth vector Count 4 " << f_manager4.getDepthVector().size() << " " << f_manager4.getFeatureCount() <<  std::endl;
 
     //std::cout << NUM_OF_F << std::endl;
     //std::cout << NUM_OF_F << std::endl;
+
     VectorXd dep3 = f_manager3.getDepthVector();
     for (int i = 0; i < f_manager3.getFeatureCount(); i++)
         para_Feature3[i][0] = dep3(i);
@@ -1271,39 +1272,55 @@ void Estimator::optimization()
 
             int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
             
-            std::cout << "start frame imu i on my " << imu_i << " size is " << it_per_id.feature_per_frame.size() << std::endl;
+            // std::cout << "start frame imu i on my " << imu_i << " size is " << it_per_id.feature_per_frame.size() << std::endl;
 
             Vector3d pts_i = it_per_id.feature_per_frame[0].point;
 
             for (auto &it_per_frame : it_per_id.feature_per_frame)
             {
-                // imu_j++;
-                // if (imu_i != imu_j)
-                // {
-                //     Vector3d pts_j = it_per_frame.point;
-                //     ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
-                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
-                //     problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index], para_Td[0]);
-                // }
+                imu_j++;
+                if (imu_i != imu_j)
+                {
+                    Vector3d pts_j = it_per_frame.point;
+                    ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
+                                                                    it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                    problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose3[0], para_Feature3[feature_index], para_Td[0]);
+                }
+                f_m_cnt++;
+            }
+        }
 
-                // if(STEREO && it_per_frame.is_stereo)
-                // {                
-                //     Vector3d pts_j_right = it_per_frame.pointRight;
-                //     if(imu_i != imu_j)
-                //     {
-                //         ProjectionTwoFrameTwoCamFactor *f = new ProjectionTwoFrameTwoCamFactor(pts_i, pts_j_right, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocityRight,
-                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
-                //         problem.AddResidualBlock(f, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Ex_Pose[1], para_Feature[feature_index], para_Td[0]);
-                //     }
-                //     else
-                //     {
-                //         ProjectionOneFrameTwoCamFactor *f = new ProjectionOneFrameTwoCamFactor(pts_i, pts_j_right, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocityRight,
-                //                                                     it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
-                //         problem.AddResidualBlock(f, loss_function, para_Ex_Pose[0], para_Ex_Pose[1], para_Feature[feature_index], para_Td[0]);
-                //     }
-                
-                // }
-                // f_m_cnt++;
+    }
+
+    {
+
+        int f_m_cnt = 0;
+        int feature_index = -1;
+        for (auto &it_per_id : f_manager4.feature)
+        {
+            it_per_id.used_num = it_per_id.feature_per_frame.size();
+            if (it_per_id.used_num < 4)
+                continue;
+    
+            ++feature_index;
+
+            int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+            
+            // std::cout << "start frame imu i on my " << imu_i << " size is " << it_per_id.feature_per_frame.size() << std::endl;
+
+            Vector3d pts_i = it_per_id.feature_per_frame[0].point;
+
+            for (auto &it_per_frame : it_per_id.feature_per_frame)
+            {
+                imu_j++;
+                if (imu_i != imu_j)
+                {
+                    Vector3d pts_j = it_per_frame.point;
+                    ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
+                                                                    it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                    problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose4[0], para_Feature4[feature_index], para_Td[0]);
+                }
+                f_m_cnt++;
             }
         }
 

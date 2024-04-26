@@ -56,19 +56,23 @@ body_T_cam3: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data: [-0.9994560872463044,0.005079861567205357,-0.03258411687872391,0.07595969423995312,
-         -0.03261782692966117,-0.0067007357952938735,0.999445434981915,-0.3192019647129244,
-         0.004858706895356135,0.9999646469482112,0.006862785225061311,-0.014792610579909726,
-         0.0,0.0,0.0,1.0]
+   data: [ -9.9480284590049184e-01, -7.9277286323674701e-02,
+       -6.3893737263029854e-02, -7.1791111575602784e-01,
+       -7.9277619707724595e-02, 2.0929925039047403e-01,
+       9.7463269122242324e-01, -1.2932586138822992e+00,
+       -6.3893323608655600e-02, 9.7463271834016529e-01,
+       -2.1449640448991225e-01, 1.9430937892798414e+00, 0., 0., 0., 1. ]
 
 body_T_cam4: !!opencv-matrix
    rows: 4
    cols: 4
    dt: d
-   data: [0.9995467016637296,0.005511010908731491,0.029597634228476027,-0.09060954731022738,
-         0.02961796399111783,-0.0036445893429541427,-0.9995546474193103,0.3063076888398109,
-         -0.005400685343515345,0.9999781726254254,-0.003806162179318312,-0.012432781622504456,
-         0.0,0.0,0.0,1.0]
+   data: [ 9.8272411327722164e-01, -1.4117762174346707e-01,
+       1.1967537884776913e-01, 3.4960902631279223e-01,
+       1.3133535225214041e-01, 7.6358641463669441e-02,
+       -9.8839282834439324e-01, 2.9311936514377152e-01,
+       1.3040069950849470e-01, 9.8703507384118905e-01,
+       9.3581090905235587e-02, -3.1885277923850275e-01, 0., 0., 0., 1. ]
 
 
 #Multiple thread support
@@ -83,8 +87,8 @@ show_track: 1           # publish tracking image as topic
 flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
 
 #optimization parameters
-max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
-max_num_iterations: 8   # max solver itrations, to guarantee real time
+max_solver_time: 0.5  # max solver itration time (ms), to guarantee real time
+max_num_iterations: 10   # max solver itrations, to guarantee real time
 keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
