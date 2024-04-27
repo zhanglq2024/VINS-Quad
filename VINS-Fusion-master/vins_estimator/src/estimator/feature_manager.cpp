@@ -308,7 +308,9 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
 {
 
     int valid_num = 0;
+    int myvalid_num = 0;
     int long_num = 0;
+    int long_valid = 0;
     for (auto &it_per_id : feature)
     {
 
@@ -390,10 +392,14 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
             Eigen::Vector3d localPoint;
             localPoint = leftPose.leftCols<3>() * point3d + leftPose.rightCols<1>();
             double depth = localPoint.z();
-            if (depth > 0) {
+            if (depth > 0 && depth < 1000) {
                 it_per_id.estimated_depth = depth;
-                valid_num ++;
+                myvalid_num ++;
+                // if (!is_stereo) {
+                //     std::cout << "Point3d:" << point3d << std::endl;
+                // }
             }
+
                 
             else
                 it_per_id.estimated_depth = INIT_DEPTH;
@@ -448,16 +454,27 @@ void FeatureManager::triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vec
         it_per_id.estimated_depth = svd_method;
         //it_per_id->estimated_depth = INIT_DEPTH;
 
-        if (it_per_id.estimated_depth < 0.1) {
+        if (it_per_id.estimated_depth < 0.1 || it_per_id.estimated_depth > 1000) {
             it_per_id.estimated_depth = INIT_DEPTH;
         } else {
-            valid_num ++;
+            long_valid ++;
         }
 
     }
-    if (!this->is_stereo) {
-        std::cout << "======== long ratio =========" << long_num << " / " << feature.size() << std::endl;
-        std::cout << "======== valid ratio ======== " << valid_num << " / " << feature.size() << std::endl;
+    // if (!this->is_stereo) {
+    //     std::cout << "======== long ratio =========" << long_num << " / " << feature.size() << std::endl;
+    //     std::cout << "======== valid ratio ======== " << valid_num << " / " << feature.size() << std::endl;
+    // }
+
+    if (is_stereo) {
+        std::cout << " stereo: ======== my valid ratio ======== " << myvalid_num << " / " << feature.size() << std::endl;
+        std::cout << " stereo: ======== valid ratio ======== " << valid_num << " / " << feature.size() << std::endl;
+        std::cout << " stereo: ======== long valid ratio ======== " << long_valid << " / " << feature.size() << std::endl;
+    }
+    else {
+        std::cout << " single: ======== my valid ratio ======== " << myvalid_num << " / " << feature.size() << std::endl;
+        std::cout << " single: ======== valid ratio ======== " << valid_num << " / " << feature.size() << std::endl;
+        std::cout << " single: ======== long valid ratio ======== " << long_valid << " / " << feature.size() << std::endl;
     }
         
 }

@@ -206,7 +206,7 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1, 
 
     if (SHOW_TRACK)
     {
-        cv::Mat imgTrack = featureTracker.getTrackImage();
+        cv::Mat imgTrack = featureTracker4.getTrackImage();
         pubTrackImage(imgTrack, t);
     }
     
@@ -614,10 +614,25 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         
         optimization();
         set<int> removeIndex;
-        outliersRejection(removeIndex);
+        outliersRejection(f_manager, removeIndex, true);
+        std::cout << "ratio is " << removeIndex.size() << " / " << f_manager.getFeatureCount() << std::endl;
         f_manager.removeOutlier(removeIndex);
+
+        set<int> removeIndex3;
+        outliersRejection(f_manager3, removeIndex3, false);
+        std::cout << "ratio 3 is " << removeIndex3.size() << " / " << f_manager3.getFeatureCount() << std::endl;
+        f_manager3.removeOutlier(removeIndex3);
+
+
+        set<int> removeIndex4;
+        outliersRejection(f_manager4, removeIndex4, false);
+        std::cout << "ratio 4 is " << removeIndex4.size() << " / " << f_manager4.getFeatureCount() << std::endl;
+        f_manager4.removeOutlier(removeIndex4);
+
+
         if (! MULTIPLE_THREAD)
         {
+            ROS_ASSERT(false);
             featureTracker.removeOutliers(removeIndex);
             predictPtsInNextFrame();
         }
@@ -636,6 +651,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
         slideWindow();
         f_manager.removeFailures();
+        f_manager3.removeFailures();
+        f_manager4.removeFailures();
         // prepare output of VINS
         key_poses.clear();
         for (int i = 0; i <= WINDOW_SIZE; i++)
@@ -961,11 +978,12 @@ void Estimator::vector2double()
 
     //std::cout << NUM_OF_F << std::endl;
     //std::cout << NUM_OF_F << std::endl;
-
+    ROS_ASSERT(f_manager3.getDepthVector().size() == f_manager3.getFeatureCount());
     VectorXd dep3 = f_manager3.getDepthVector();
     for (int i = 0; i < f_manager3.getFeatureCount(); i++)
         para_Feature3[i][0] = dep3(i);
     
+    ROS_ASSERT(f_manager4.getDepthVector().size() == f_manager4.getFeatureCount());
     VectorXd dep4 = f_manager4.getDepthVector();
     for (int i = 0; i < f_manager4.getFeatureCount(); i++)
         para_Feature4[i][0] = dep4(i);
@@ -1186,6 +1204,38 @@ void Estimator::optimization()
             problem.SetParameterBlockConstant(para_Ex_Pose[i]);
         }
     }
+
+    {
+        ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+        problem.AddParameterBlock(para_Ex_Pose3[0], SIZE_POSE, local_parameterization);
+        if ((ESTIMATE_EXTRINSIC && frame_count == WINDOW_SIZE && Vs[0].norm() > 0.2) || openExEstimation)
+        {
+            //ROS_INFO("estimate extinsic param");
+            openExEstimation = 1;
+        }
+        else
+        {
+            //ROS_INFO("fix extinsic param");
+            problem.SetParameterBlockConstant(para_Ex_Pose3[0]);
+        }
+    }
+
+    {
+        ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+        problem.AddParameterBlock(para_Ex_Pose4[0], SIZE_POSE, local_parameterization);
+        if ((ESTIMATE_EXTRINSIC && frame_count == WINDOW_SIZE && Vs[0].norm() > 0.2) || openExEstimation)
+        {
+            //ROS_INFO("estimate extinsic param");
+            openExEstimation = 1;
+        }
+        else
+        {
+            //ROS_INFO("fix extinsic param");
+            problem.SetParameterBlockConstant(para_Ex_Pose4[0]);
+        }
+    }
+
+
     problem.AddParameterBlock(para_Td[0], 1);
 
     if (!ESTIMATE_TD || Vs[0].norm() < 0.2)
@@ -1356,6 +1406,8 @@ void Estimator::optimization()
     if(frame_count < WINDOW_SIZE)
         return;
     
+
+
     TicToc t_whole_marginalization;
     if (marginalization_flag == MARGIN_OLD)
     {
@@ -1446,6 +1498,77 @@ void Estimator::optimization()
                 }
             }
         }
+        
+        // feature3
+        {
+            int feature_index = -1;
+            for (auto &it_per_id : f_manager3.feature)
+            {
+                it_per_id.used_num = it_per_id.feature_per_frame.size();
+                if (it_per_id.used_num < 4)
+                    continue;
+
+                ++feature_index;
+
+                int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+                if (imu_i != 0)
+                    continue;
+
+                Vector3d pts_i = it_per_id.feature_per_frame[0].point;
+
+                for (auto &it_per_frame : it_per_id.feature_per_frame)
+                {
+                    imu_j++;
+                    if(imu_i != imu_j)
+                    {
+                        Vector3d pts_j = it_per_frame.point;
+                        ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
+                                                                          it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                        ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(f_td, loss_function,
+                                                                                        vector<double *>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose3[0], para_Feature3[feature_index], para_Td[0]},
+                                                                                        vector<int>{0, 3});
+                        marginalization_info->addResidualBlockInfo(residual_block_info);
+                    }
+                    
+                }
+            }
+        }
+
+        // feature4
+        {
+            int feature_index = -1;
+            for (auto &it_per_id : f_manager4.feature)
+            {
+                it_per_id.used_num = it_per_id.feature_per_frame.size();
+                if (it_per_id.used_num < 4)
+                    continue;
+
+                ++feature_index;
+
+                int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+                if (imu_i != 0)
+                    continue;
+
+                Vector3d pts_i = it_per_id.feature_per_frame[0].point;
+
+                for (auto &it_per_frame : it_per_id.feature_per_frame)
+                {
+                    imu_j++;
+                    if(imu_i != imu_j)
+                    {
+                        Vector3d pts_j = it_per_frame.point;
+                        ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
+                                                                          it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                        ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(f_td, loss_function,
+                                                                                        vector<double *>{para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose4[0], para_Feature4[feature_index], para_Td[0]},
+                                                                                        vector<int>{0, 3});
+                        marginalization_info->addResidualBlockInfo(residual_block_info);
+                    }
+                    
+                }
+            }
+        }
+
 
         TicToc t_pre_margin;
         marginalization_info->preMarginalize();
@@ -1464,7 +1587,9 @@ void Estimator::optimization()
         }
         for (int i = 0; i < NUM_OF_CAM; i++)
             addr_shift[reinterpret_cast<long>(para_Ex_Pose[i])] = para_Ex_Pose[i];
-
+        
+        addr_shift[reinterpret_cast<long>(para_Ex_Pose3[0])] = para_Ex_Pose3[0];
+        addr_shift[reinterpret_cast<long>(para_Ex_Pose4[0])] = para_Ex_Pose4[0];
         addr_shift[reinterpret_cast<long>(para_Td[0])] = para_Td[0];
 
         vector<double *> parameter_blocks = marginalization_info->getParameterBlocks(addr_shift);
@@ -1531,9 +1656,10 @@ void Estimator::optimization()
             }
             for (int i = 0; i < NUM_OF_CAM; i++)
                 addr_shift[reinterpret_cast<long>(para_Ex_Pose[i])] = para_Ex_Pose[i];
-
+            
             addr_shift[reinterpret_cast<long>(para_Td[0])] = para_Td[0];
-
+            addr_shift[reinterpret_cast<long>(para_Ex_Pose3[0])] = para_Ex_Pose3[0];
+            addr_shift[reinterpret_cast<long>(para_Ex_Pose4[0])] = para_Ex_Pose4[0];
             
             vector<double *> parameter_blocks = marginalization_info->getParameterBlocks(addr_shift);
             if (last_marginalization_info)
@@ -1702,6 +1828,7 @@ void Estimator::getPoseInWorldFrame(int index, Eigen::Matrix4d &T)
 
 void Estimator::predictPtsInNextFrame()
 {
+    ROS_ASSERT(false);
     //printf("predict pts in next frame\n");
     if(frame_count < 2)
         return;
@@ -1747,11 +1874,11 @@ double Estimator::reprojectionError(Matrix3d &Ri, Vector3d &Pi, Matrix3d &rici, 
     return sqrt(rx * rx + ry * ry);
 }
 
-void Estimator::outliersRejection(set<int> &removeIndex)
+void Estimator::outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo)
 {
     //return;
     int feature_index = -1;
-    for (auto &it_per_id : f_manager.feature)
+    for (auto &it_per_id : fmanager.feature)
     {
         double err = 0;
         int errCnt = 0;
@@ -1776,7 +1903,7 @@ void Estimator::outliersRejection(set<int> &removeIndex)
                 //printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
             }
             // need to rewrite projecton factor.........
-            if(STEREO && it_per_frame.is_stereo)
+            if(is_stereo && it_per_frame.is_stereo)
             {
                 
                 Vector3d pts_j_right = it_per_frame.pointRight;
@@ -1803,6 +1930,8 @@ void Estimator::outliersRejection(set<int> &removeIndex)
         double ave_err = err / errCnt;
         if(ave_err * FOCAL_LENGTH > 3)
             removeIndex.insert(it_per_id.feature_id);
+        if (!is_stereo)
+            std::cout << "average error " << ave_err * FOCAL_LENGTH << std::endl;
 
     }
 }

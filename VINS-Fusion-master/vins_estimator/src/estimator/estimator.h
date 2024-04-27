@@ -74,7 +74,7 @@ class Estimator
     void getPoseInWorldFrame(Eigen::Matrix4d &T);
     void getPoseInWorldFrame(int index, Eigen::Matrix4d &T);
     void predictPtsInNextFrame();
-    void outliersRejection(set<int> &removeIndex);
+    void outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo);
     double reprojectionError(Matrix3d &Ri, Vector3d &Pi, Matrix3d &rici, Vector3d &tici,
                                      Matrix3d &Rj, Vector3d &Pj, Matrix3d &ricj, Vector3d &ticj, 
                                      double depth, Vector3d &uvi, Vector3d &uvj);
@@ -166,12 +166,12 @@ class Estimator
 
     double para_Pose[WINDOW_SIZE + 1][SIZE_POSE];
     double para_SpeedBias[WINDOW_SIZE + 1][SIZE_SPEEDBIAS];
+
     double para_Feature[NUM_OF_F][SIZE_FEATURE];
     double para_Feature3[NUM_OF_F][SIZE_FEATURE];
     double para_Feature4[NUM_OF_F][SIZE_FEATURE];
 
     double para_Ex_Pose[2][SIZE_POSE];
-
     double para_Ex_Pose3[1][SIZE_POSE];
     double para_Ex_Pose4[1][SIZE_POSE];
 
