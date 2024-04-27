@@ -9,6 +9,8 @@
 
 #include "estimator.h"
 #include "../utility/visualization.h"
+#include <iostream>
+#include <random>
 
 Estimator::Estimator():f_manager(FeatureManager(Rs, true)), 
     // f_manager3{Rs, false}, f_manager4{Rs, false}
@@ -614,18 +616,18 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         
         optimization();
         set<int> removeIndex;
-        outliersRejection(f_manager, removeIndex, true);
+        outliersRejection(f_manager, removeIndex, true, ric, tic);
         std::cout << "ratio is " << removeIndex.size() << " / " << f_manager.getFeatureCount() << std::endl;
         f_manager.removeOutlier(removeIndex);
 
         set<int> removeIndex3;
-        outliersRejection(f_manager3, removeIndex3, false);
+        outliersRejection(f_manager3, removeIndex3, false, &ric3, &tic3);
         std::cout << "ratio 3 is " << removeIndex3.size() << " / " << f_manager3.getFeatureCount() << std::endl;
         f_manager3.removeOutlier(removeIndex3);
 
 
         set<int> removeIndex4;
-        outliersRejection(f_manager4, removeIndex4, false);
+        outliersRejection(f_manager4, removeIndex4, false, &ric4, &tic4);
         std::cout << "ratio 4 is " << removeIndex4.size() << " / " << f_manager4.getFeatureCount() << std::endl;
         f_manager4.removeOutlier(removeIndex4);
 
@@ -1260,10 +1262,28 @@ void Estimator::optimization()
         }
     }
 
+    // 创建随机数引擎
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    // 创建均匀分布的浮点数，范围从0到1
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+
     int f_m_cnt = 0;
     int feature_index = -1;
     for (auto &it_per_id : f_manager.feature)
     {
+
+
+
+        // // 生成随机数
+        // double random_number = dis(gen);
+
+        // // 检查随机数是否小于或等于0.25
+        // if (random_number > 0.25) {
+        //     continue;
+        // } 
+
+
         it_per_id.used_num = it_per_id.feature_per_frame.size();
         if (it_per_id.used_num < 4)
             continue;
@@ -1278,6 +1298,9 @@ void Estimator::optimization()
 
         for (auto &it_per_frame : it_per_id.feature_per_frame)
         {
+
+            
+
             imu_j++;
             if (imu_i != imu_j)
             {
@@ -1874,7 +1897,7 @@ double Estimator::reprojectionError(Matrix3d &Ri, Vector3d &Pi, Matrix3d &rici, 
     return sqrt(rx * rx + ry * ry);
 }
 
-void Estimator::outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo)
+void Estimator::outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo, Matrix3d ric[], Vector3d tic[])
 {
     //return;
     int feature_index = -1;

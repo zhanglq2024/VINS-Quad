@@ -74,7 +74,8 @@ class Estimator
     void getPoseInWorldFrame(Eigen::Matrix4d &T);
     void getPoseInWorldFrame(int index, Eigen::Matrix4d &T);
     void predictPtsInNextFrame();
-    void outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo);
+    // Vector3d tic[], Matrix3d ric[]);
+    void outliersRejection(FeatureManager& fmanager, set<int> &removeIndex, bool is_stereo, Matrix3d ric[], Vector3d tic[]);
     double reprojectionError(Matrix3d &Ri, Vector3d &Pi, Matrix3d &rici, Vector3d &tici,
                                      Matrix3d &Rj, Vector3d &Pj, Matrix3d &ricj, Vector3d &ticj, 
                                      double depth, Vector3d &uvi, Vector3d &uvj);
