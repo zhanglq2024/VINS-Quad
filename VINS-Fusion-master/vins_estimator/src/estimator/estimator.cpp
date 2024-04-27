@@ -508,6 +508,36 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                 RIC[0] = calib_ric;
                 ESTIMATE_EXTRINSIC = 1;
             }
+
+            vector<pair<Vector3d, Vector3d>> corres3 = f_manager3.getCorresponding(frame_count - 1, frame_count);
+            Matrix3d calib_ric3;
+            if (initial_ex_rotation.CalibrationExRotation(corres3, pre_integrations[frame_count]->delta_q, calib_ric3))
+            {
+                ROS_WARN("initial extrinsic rotation calib3 success");
+                ROS_WARN_STREAM("initial extrinsic3 rotation: " << endl << calib_ric3);
+                ric3 = calib_ric3;
+                RIC[2] = calib_ric3;
+
+                ESTIMATE_EXTRINSIC = 1;
+            }
+
+            vector<pair<Vector3d, Vector3d>> corres4 = f_manager4.getCorresponding(frame_count - 1, frame_count);
+            Matrix3d calib_ric4;
+            if (initial_ex_rotation.CalibrationExRotation(corres4, pre_integrations[frame_count]->delta_q, calib_ric4))
+            {
+                ROS_WARN("initial extrinsic rotation calib4 success");
+                ROS_WARN_STREAM("initial extrinsic4 rotation: " << endl << calib_ric4);
+                ric4 = calib_ric4;
+                RIC[3] = calib_ric4;
+                ESTIMATE_EXTRINSIC = 1;
+            }
+
+            std::cout << "size of corres3 " << corres3.size() << std::endl;
+            std::cout << "size of corres4 " << corres4.size() << std::endl;
+            std::cout << "result of calib_ric3 " << calib_ric3 << std::endl;
+            std::cout << "result of calib_ric4 " << calib_ric4 << std::endl;
+            std::cout << "--------------------------- done estimating extrinsic-------------------- " << std::endl;
+            // exit(0);
         }
     }
 
