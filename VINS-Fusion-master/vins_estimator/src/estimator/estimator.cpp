@@ -493,6 +493,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     all_image_frame.insert(make_pair(header, imageframe));
     tmp_pre_integration = new IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
 
+    // TODO: check 如果一开始没有旋转，会等待旋转还是继续执行
+
     if(ESTIMATE_EXTRINSIC == 2)
     {
         ROS_INFO("calibrating extrinsic param, rotation movement is needed");
